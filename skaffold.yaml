@@ -1,0 +1,20 @@
+apiVersion: skaffold/v4beta8
+kind: Config
+metadata:
+  name: social-network
+build:
+  artifacts:
+    - image: martcl/activity-pub
+      context: activity-pub
+      buildpacks:
+        builder: gcr.io/buildpacks/builder:v1
+    - image: martcl/webfinger
+      context: webfinger
+      buildpacks:
+        builder: gcr.io/buildpacks/builder:v1
+
+manifests:
+  rawYaml:
+    - k8s/activity_pub.yaml
+    - k8s/webfinger.yaml
+    - k8s/ingress.yml

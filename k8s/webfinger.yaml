@@ -1,0 +1,32 @@
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: webfinger-service
+spec:
+  ports:
+  - port: 3000
+    targetPort: 3000
+    name: http
+  selector:
+    app: webfinger
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: webfinger
+spec:
+  selector:
+    matchLabels:
+      app: webfinger
+  template:
+    metadata:
+      labels:
+        app: webfinger
+    spec:
+      containers:
+      - name: webfinger
+        image: martcl/webfinger
+        ports:
+          - containerPort: 3000
+
