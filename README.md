@@ -9,14 +9,10 @@ Start the services
 ```sh
 nix-shell -p skaffold minikube kubectl go --run zsh
 minikube start
-miniikube addons enable ingress
+minikube addons enable ingress
 skaffold dev
 ```
 
-Get the minikube IP
-```sh
-minikube ip
-```
 Update `/etc/hosts` with the minikube IP and the domain name
 ```sh
 echo "# Kubernetes social network" >> /etc/hosts
