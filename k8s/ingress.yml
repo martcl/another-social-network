@@ -4,7 +4,8 @@ metadata:
   name: ingress-service
 spec:
   rules:
-  - http:
+  - host: social-network.local
+    http:
       paths:
       - pathType: Prefix
         path: "/.well-known/webfinger"
@@ -20,3 +21,14 @@ spec:
             name: social-network
             port:
               number: 3000
+  - host: couchdb.local
+    http:
+      paths:
+      - pathType: Prefix
+        path: "/"
+        backend:
+          service:
+            name: couchdb-service
+            port:
+              number: 5984
+

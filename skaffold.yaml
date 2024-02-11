@@ -18,3 +18,4 @@ manifests:
     - k8s/activity_pub.yaml
     - k8s/webfinger.yaml
     - k8s/ingress.yml
+    - k8s/couchdb.yaml

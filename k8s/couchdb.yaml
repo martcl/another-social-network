@@ -1,0 +1,112 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: couchdb-configuration
+data:
+  COUCHDB_USER: "admin"
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: couchdb-credentials
+type: Opaque
+data:
+  # TODO: Store this in a secure way
+  password: c3VwZXItc2VjcmV0
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: couchdb-pv
+  labels:
+    type: local
+spec:
+  storageClassName: manual
+  capacity:
+    storage: 1Gi
+  accessModes:
+    - ReadWriteOnce
+  hostPath:
+    path: /data/pv0001/
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: couchdb-pvc
+  labels:
+    type: local
+spec:
+  storageClassName: manual
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 500Mi
+  volumeName: couchdb-pv
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: couchdb-statefulset
+spec:
+  serviceName: "couchdb"
+  replicas: 1
+  selector:
+    matchLabels:
+      app: couchdb # has to match .spec.template.metadata.labels
+  template:
+    metadata:
+      labels:
+        app: couchdb
+    spec:
+      containers:
+        - name: couchdb
+          image: couchdb:3.3.3
+          envFrom:
+            - configMapRef:
+                name: couchdb-configuration
+          env:
+            - name: COUCHDB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: couchdb-credentials
+                  key: password
+          ports:
+            - containerPort: 5984
+              name: couchdb
+          volumeMounts:
+            - name: couchdb-volume-mount
+              mountPath: /opt/couchdb/data
+          readinessProbe:
+            exec:
+              command:
+                - bash
+                - "-c"
+                - "curl -s -o /dev/null -w '%{http_code}' http://localhost:5984"
+            initialDelaySeconds: 15
+            timeoutSeconds: 2
+          livenessProbe:
+            exec:
+              command:
+                - bash
+                - "-c"
+                - "curl -s -o /dev/null -w '%{http_code}' http://localhost:5984"
+            initialDelaySeconds: 15
+            timeoutSeconds: 2
+      volumes:
+        - name: couchdb-volume-mount
+          persistentVolumeClaim:
+            claimName: couchdb-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: couchdb-service
+spec:
+  ports:
+    - port: 5984
+      name: couchdb
+  type: NodePort
+  selector:
+    app: couchdb
