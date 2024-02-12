@@ -7,7 +7,7 @@ import (
 	"strings"
 )
 
-type link struct {
+type Link struct {
 	Rel  string `json:"rel"`
 	Href string `json:"href"`
 }
@@ -19,57 +19,71 @@ type Webfinger struct {
 
 func main() {
 	mux := http.NewServeMux()
-	mux.HandleFunc("GET /.well-known/webfinger", GETWebfinger)
+	mux.HandleFunc("/.well-known/webfinger", handleWebfinger)
+
 	fmt.Println("Server is running on http://localhost:3000")
-	http.ListenAndServe(":3000", mux)
+	if err := http.ListenAndServe(":3000", mux); err != nil {
+		fmt.Printf("Failed to start server: %v\n", err)
+	}
 }
 
-func GETWebfinger(w http.ResponseWriter, r *http.Request) {
+func handleWebfinger(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Invalid method", http.StatusMethodNotAllowed)
+		return
+	}
+
 	resource := r.URL.Query().Get("resource")
-
-	// check the resource starts with acct:
-	if len(resource) < 25 || resource[:5] != "acct:" {
-		w.WriteHeader(http.StatusBadRequest)
+	username, host, err := parseResource(resource)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	resource = resource[5:] // remove "acct:"
-	usernameHost := strings.Split(resource, "@")
-	if len(usernameHost) != 3 {
-		w.WriteHeader(http.StatusBadRequest)
+	webfinger, err := getWebfinger(username, host)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusNotFound)
 		return
-	}
-
-	username := usernameHost[1]
-	host := usernameHost[2]
-
-	// check if the host is the host of the server
-	if host != "social-network.local" {
-		w.WriteHeader(http.StatusNotFound)
-		return
-	}
-
-	// check if the user exists
-	resp, err := http.Get(fmt.Sprintf("http://admin:super-secret@couchdb.local/users/%s", username))
-	if err != nil || resp.StatusCode != http.StatusOK {
-		w.WriteHeader(http.StatusNotFound)
-		return
-	}
-
-	webfinger := Webfinger{
-		Subject: resource,
-		Aliases: []string{
-			"http://social-network.local/u/martin",
-		},
 	}
 
 	jsonResponse, err := json.Marshal(webfinger)
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
 	w.Write(jsonResponse)
+}
+
+func parseResource(resource string) (username, host string, err error) {
+	if len(resource) < 25 || !strings.HasPrefix(resource, "acct:") {
+		return "", "", fmt.Errorf("invalid resource")
+	}
+
+	parts := strings.Split(resource[5:], "@")
+	if len(parts) != 3 {
+		return "", "", fmt.Errorf("invalid resource")
+	}
+
+	return parts[1], parts[2], nil
+}
+
+func getWebfinger(username, host string) (*Webfinger, error) {
+	if host != "social-network.local" {
+		return nil, fmt.Errorf("not found")
+	}
+	fmt.Printf("username: %s, host: %s\n", username, host)
+
+	resp, err := http.Get(fmt.Sprintf("http://admin:super-secret@couchdb-service.default.svc.cluster.local:5984/users/%s", username))
+	if err != nil || resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("not found")
+	}
+
+	return &Webfinger{
+		Subject: fmt.Sprintf("acct:%s@%s", username, host),
+		Aliases: []string{
+			fmt.Sprintf("http://%s/u/%s", host, username),
+		},
+	}, nil
 }
