@@ -8,7 +8,7 @@ Experimenting with ActivityPub and how it can be implemented. What can this prot
 Start the services
 ```sh
 nix-shell -p skaffold minikube kubectl go --run zsh
-minikube start
+minikube start --static-ip 192.168.58.2
 minikube addons enable ingress
 skaffold dev
 ```
@@ -23,7 +23,7 @@ echo "$(minikube ip) couchdb.local" >> /etc/hosts
 Test the service
 ```sh
 curl http://social-network.local
-curl http://social-network.local/.well-known/webfinger
+curl http://social-network.local/.well-known/webfinger?resource=acct:@martin@social-network.local
 ```
 
 Look at the database http://couchdb.local/_utils
