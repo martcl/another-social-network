@@ -1,4 +1,4 @@
-# ActivityPub experiment with Golang
+# Social Network
 
 Experimenting with ActivityPub and how it can be implemented. What can this protocol enable us to do other than serve as a _social network_ protocol?
 

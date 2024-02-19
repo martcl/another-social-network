@@ -4,18 +4,15 @@ metadata:
   name: social-network
 build:
   artifacts:
-    - image: martcl/activity-pub
-      context: activity-pub
+    - image: martcl/another-social-network
+      context: another-social-network
       buildpacks:
         builder: gcr.io/buildpacks/builder:v1
-    - image: martcl/webfinger
-      context: webfinger
-      buildpacks:
-        builder: gcr.io/buildpacks/builder:v1
+        env:
+          - BP_GO_TARGETS=./cmd/server/main.go
 
 manifests:
   rawYaml:
-    - k8s/activity_pub.yaml
-    - k8s/webfinger.yaml
+    - k8s/another-social-network.yaml
     - k8s/ingress.yml
     - k8s/couchdb.yaml

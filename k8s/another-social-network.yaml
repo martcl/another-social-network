@@ -1,32 +1,31 @@
-
 apiVersion: v1
 kind: Service
 metadata:
-  name: webfinger-service
+  name: another-social-network-service
 spec:
   ports:
   - port: 3000
     targetPort: 3000
     name: http
   selector:
-    app: webfinger
+    app: another-social-network
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: webfinger
+  name: another-social-network
 spec:
   selector:
     matchLabels:
-      app: webfinger
+      app: another-social-network
   template:
     metadata:
       labels:
-        app: webfinger
+        app: another-social-network
     spec:
       containers:
-      - name: webfinger
-        image: martcl/webfinger
+      - name: another-social-network
+        image: martcl/another-social-network
         ports:
           - containerPort: 3000
-
+        
